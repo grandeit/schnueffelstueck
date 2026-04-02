@@ -1,6 +1,9 @@
 package qmp
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // command is the client-to-server message format.
 // Source: docs/interop/qmp-spec.rst "Issuing Commands"
@@ -14,18 +17,22 @@ type command struct {
 // Source: docs/interop/qmp-spec.rst "Commands Responses" and "Asynchronous events"
 type response struct {
 	Return    json.RawMessage `json:"return,omitempty"`
-	Error     *qmpError       `json:"error,omitempty"`
+	Error     *QMPError       `json:"error,omitempty"`
 	ID        json.RawMessage `json:"id,omitempty"`
 	Event     string          `json:"event,omitempty"`
 	Data      json.RawMessage `json:"data,omitempty"`
 	Timestamp *timestamp      `json:"timestamp,omitempty"`
 }
 
-// qmpError is the nested error object inside an error response.
+// QMPError is the error object inside an error response.
 // Source: docs/interop/qmp-spec.rst "Error"
-type qmpError struct {
+type QMPError struct {
 	Class string `json:"class"`
 	Desc  string `json:"desc"`
+}
+
+func (e *QMPError) Error() string {
+	return fmt.Sprintf("QMP error: %s: %s", e.Class, e.Desc)
 }
 
 // timestamp is the time attached to async events.
