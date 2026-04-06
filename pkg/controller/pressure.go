@@ -69,6 +69,15 @@ func (c *PressureController) Decide(sample collector.Sample) (*Decision, error) 
 		delta = -maxStep
 	}
 
+	slog.Debug("pressure controller stats",
+		"pressure", fmt.Sprintf("%.2f", pressure),
+		"generosity", fmt.Sprintf("%.2f", generosity),
+		"reclaim_pct", fmt.Sprintf("%.1f%%", reclaimPct*100),
+		"current_mib", current/mib,
+		"desired_mib", desiredBalloon/mib,
+		"delta_mib", delta/int64(mib),
+	)
+
 	minStep := int64(c.minStepPct * float64(guest.Total))
 	if delta > -minStep && delta < minStep {
 		slog.Debug("pressure controller: within dead band, skipping",
