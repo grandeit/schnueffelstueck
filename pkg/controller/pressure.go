@@ -24,7 +24,7 @@ func NewPressureController(config Config) *PressureController {
 		minStepPct:       config.PressureGuestMinStepPct,
 		hostReservedPct:  config.HostReservedPct,
 		hostSteepness:    config.PressureHostSteepness,
-		guestReservedPct: 1 - 1/config.GuestOvercommit,
+		guestReservedPct: 1 / config.GuestOvercommit,
 		guestSteepness:   config.PressureGuestSteepness,
 	}
 }
@@ -53,7 +53,7 @@ func (c *PressureController) Decide(sample collector.Sample) (*Decision, error) 
 	pressure := exponential(min(1, (1-hostFreePct)/(1-c.hostReservedPct)), c.hostSteepness)
 	generosity := exponential(max(0, (guestFreePct-c.guestReservedPct)/(1-c.guestReservedPct)), c.guestSteepness)
 
-	reclaimPct := pressure * generosity * c.guestReservedPct
+	reclaimPct := pressure * generosity * (1 - c.guestReservedPct)
 
 	reclaimBytes := reclaimPct * float64(guest.Total)
 
