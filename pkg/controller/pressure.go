@@ -69,6 +69,17 @@ func (c *PressureController) Decide(sample collector.Sample) (*Decision, error) 
 		delta = -maxStep
 	}
 
+	slog.Debug("host stats",
+		"total_mib", host.Total/(1024*1024),
+		"available_mib", host.Available/(1024*1024),
+		"free_pct", fmt.Sprintf("%.1f%%", hostFreePct*100),
+	)
+	slog.Debug("guest stats",
+		"total_mib", guest.Total/(1024*1024),
+		"available_mib", guest.Available/(1024*1024),
+		"free_pct", fmt.Sprintf("%.1f%%", guestFreePct*100),
+	)
+
 	slog.Debug("pressure controller stats",
 		"pressure", fmt.Sprintf("%.2f", pressure),
 		"generosity", fmt.Sprintf("%.2f", generosity),
