@@ -5,8 +5,11 @@ _Ein selbsttätiger Entlüfter, in Fachkreisen auch Schnüffelstück genannt._
 ---
 
 A KubeVirt sidecar that dynamically manages VM memory using QEMU balloon devices.
-It monitors host and guest memory pressure and automatically inflates or deflates
-the balloon to balance memory across VMs on the same node.
+It monitors host and guest memory and automatically inflates or deflates
+the balloon to balance memory across VMs on the same node. Two controllers
+are available: a **pressure** controller that uses exponential curves and guest
+awareness for fine-grained control, and a simpler **watermark** controller that
+uses threshold-based hysteresis.
 
 ## How It Works
 
@@ -122,7 +125,7 @@ reclaim = pressure × (generosity + pressure × (1 − generosity)) × maxReclai
 
 Where `maxReclaim = 1 − 1/overcommit` (e.g., 0.5 for overcommit 2).
 
-![Exponential curves](doc/curves.png)
+![Pressure curves](doc/pressure.png)
 
 **Top row**: base exponential function, host pressure vs host free %, and guest generosity vs guest free %.
 **Bottom row**: effective reclaim % at pressure 0.2, 0.5, and 0.9 - despite lower generosity, higher overcommit reclaims more because the reclaimable zone is larger. At high pressure the lerp override forces reclaim toward the maximum.
@@ -143,6 +146,44 @@ Example: 64 GiB host, 10% reserved, 12 GiB VMs, overcommit 2:
 
 This is a worst-case guarantee. In normal operation (low pressure), VMs keep more memory.
 
+### `watermark`
+
+A simpler alternative to the pressure controller. Instead of continuous exponential curves, it uses two thresholds (watermarks) with a dead band in between:
+
+- **Below low watermark**: host is running low on memory — reclaim from VMs proportionally
+- **Above high watermark**: host has excess memory — release it back to VMs
+- **Between low and high**: do nothing (dead band prevents oscillation)
+
+```
+reclaim = clamp((targetFree − hostFree) / vmFraction, 0, maxReclaim) × guestTotal
+```
+
+Where `vmFraction = guestTotal / hostTotal` scales the host-level deficit to this VM's fair share, and `maxReclaim = 1 − 1/overcommit` enforces the balloon floor.
+
+The watermark controller doesn't consider guest memory state — it only looks at host free %. Guest protection comes solely from the overcommit floor. This makes it predictable and easy to reason about, but less adaptive than the pressure controller.
+
+![Watermark curves](doc/watermark.png)
+
+Each panel shows different VM sizes (4–32G) on a 64G host with oc=2, low=10%, high=20%. **Left**: reclaim as a percentage of guest RAM — small VMs hit the 50% ceiling quickly, large VMs never reach it because the formula asks less of them proportionally. **Right**: absolute GiB reclaimed — larger VMs still contribute more in absolute terms despite the lower percentage.
+
+Setting `watermark-high-pct = watermark-low-pct` collapses the dead band, turning this into a simple target-chaser.
+
+#### Capacity Planning
+
+At maximum reclaim, each VM keeps `guestSize / overcommit` of host RAM. The low watermark is maintained as long as:
+
+```
+max VMs = (host RAM × (1 − lowWatermark)) / (VM size / overcommit)
+```
+
+Example: 64 GiB host, low=10%, 8 GiB VMs, overcommit 2:
+
+```
+(64 × 0.90) / (8 / 2) = 57.6 / 4 = 14 VMs
+```
+
+This is the same formula as the pressure controller's capacity planning, with `lowWatermark` replacing `hostReservedPct`.
+
 ## Configuration
 
 All settings are VMI annotations with the `schnueffelstueck/` prefix.
@@ -151,7 +192,7 @@ All settings are VMI annotations with the `schnueffelstueck/` prefix.
 
 | Annotation | Type | Default | Description |
 |---|---|---|---|
-| `controller` | string | `log` | Controller kind: `log` or `pressure` |
+| `controller` | string | `log` | Controller kind: `log`, `pressure`, or `watermark` |
 | `interval` | duration | `1s` | Control loop tick interval |
 | `dry-run` | bool | `false` | Log decisions without applying them |
 | `guest-overcommit` | float | `2.0` | Overcommit ratio. `2.0` = VM keeps at least 50% of its RAM |
@@ -168,6 +209,13 @@ All settings are VMI annotations with the `schnueffelstueck/` prefix.
 | `pressure-guest-steepness` | float | `2` | Guest generosity curve steepness. Higher = stingy with surplus |
 
 Setting steepness to `0` gives a linear curve. Negative values make the curve concave (aggressive early, gentle late).
+
+### Watermark Controller
+
+| Annotation | Type | Default | Description |
+|---|---|---|---|
+| `watermark-high-pct` | float | `0.2` | Host free % above which memory is released back to VMs |
+| `watermark-low-pct` | float | `0.1` | Host free % below which memory is reclaimed from VMs |
 
 ### CLI Flags
 
