@@ -128,7 +128,8 @@ Where `maxReclaim = 1 − 1/overcommit` (e.g., 0.5 for overcommit 2).
 ![Pressure curves](doc/pressure.png)
 
 **Top row**: base exponential function, host pressure vs host free %, and guest generosity vs guest free %.
-**Bottom row**: effective reclaim % at pressure 0.2, 0.5, and 0.9 - despite lower generosity, higher overcommit reclaims more because the reclaimable zone is larger. At high pressure the lerp override forces reclaim toward the maximum.
+**Middle row**: effective reclaim % at pressure 0.2, 0.5, and 0.9 with steepness s=2. Despite lower generosity, higher overcommit reclaims more because the reclaimable zone is larger. At high pressure the lerp override forces reclaim toward the maximum.
+**Bottom row**: same as middle row but with steepness s=8 — reclaim stays suppressed until the guest has significantly more free memory, then ramps sharply.
 
 #### Capacity Planning
 
