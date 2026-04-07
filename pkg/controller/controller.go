@@ -20,6 +20,9 @@ func NewController(config Config) Controller {
 	case "log":
 		slog.Info("selected log controller")
 		return NewLogController()
+	case "pressure":
+		slog.Info("selected pressure controller")
+		return NewPressureController(config)
 	default:
 		slog.Warn("selected unknown controller, falling back to default (log)", "controller", config.Kind)
 		return NewLogController()
