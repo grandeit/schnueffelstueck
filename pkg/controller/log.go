@@ -12,8 +12,6 @@ func NewLogController() *LogController {
 	return &LogController{}
 }
 
-const mib uint64 = 1024 * 1024
-
 func (c *LogController) Decide(sample collector.Sample) (*Decision, error) {
 	slog.Debug("raw sample data", "sample", sample, "controller", "log")
 

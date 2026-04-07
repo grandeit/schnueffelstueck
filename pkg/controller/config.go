@@ -6,33 +6,33 @@ import (
 	"time"
 )
 
-type Config struct {
-	Kind     string
-	Interval time.Duration
-	DryRun   bool
+const mib uint64 = 1024 * 1024
 
+type Config struct {
+	Kind            string
+	Interval        time.Duration
+	DryRun          bool
 	GuestOvercommit float64
+	GuestMinStepPct float64
+	GuestMaxStepPct float64
 	HostReservedPct float64
 
-	PressureHostSteepness   float64
-	PressureGuestSteepness  float64
-	PressureGuestMaxStepPct float64
-	PressureGuestMinStepPct float64
+	PressureHostSteepness  float64
+	PressureGuestSteepness float64
 }
 
 func NewConfigFromSettings(settings map[string]string) Config {
 	c := Config{
-		Kind:     settingString(settings, "controller", "log"),
-		Interval: settingDuration(settings, "controller-interval", time.Second),
-		DryRun:   settingBool(settings, "controller-dry-run", false),
-
+		Kind:            settingString(settings, "controller", "log"),
+		Interval:        settingDuration(settings, "interval", time.Second),
+		DryRun:          settingBool(settings, "dry-run", false),
 		GuestOvercommit: settingFloat(settings, "guest-overcommit", 2.0),
-		HostReservedPct: settingFloat(settings, "host-reserved-pct", 0.05),
+		GuestMinStepPct: settingFloat(settings, "guest-min-step-pct", 0.01),
+		GuestMaxStepPct: settingFloat(settings, "guest-max-step-pct", 0.1),
+		HostReservedPct: settingFloat(settings, "host-reserved-pct", 0.1),
 
-		PressureHostSteepness:   settingFloat(settings, "pressure-host-steepness", 4),
-		PressureGuestSteepness:  settingFloat(settings, "pressure-guest-steepness", 4),
-		PressureGuestMaxStepPct: settingFloat(settings, "pressure-guest-max-step-pct", 0.1),
-		PressureGuestMinStepPct: settingFloat(settings, "pressure-guest-min-step-pct", 0.01),
+		PressureHostSteepness:  settingFloat(settings, "pressure-host-steepness", 2),
+		PressureGuestSteepness: settingFloat(settings, "pressure-guest-steepness", 2),
 	}
 
 	slog.Info("loaded controller config from settings", "config", c)
