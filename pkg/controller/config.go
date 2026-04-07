@@ -19,6 +19,9 @@ type Config struct {
 
 	PressureHostSteepness  float64
 	PressureGuestSteepness float64
+
+	WatermarkHighPct float64
+	WatermarkLowPct  float64
 }
 
 func NewConfigFromSettings(settings map[string]string) Config {
@@ -33,6 +36,9 @@ func NewConfigFromSettings(settings map[string]string) Config {
 
 		PressureHostSteepness:  settingFloat(settings, "pressure-host-steepness", 2),
 		PressureGuestSteepness: settingFloat(settings, "pressure-guest-steepness", 2),
+
+		WatermarkHighPct: settingFloat(settings, "watermark-high-pct", 0.2),
+		WatermarkLowPct:  settingFloat(settings, "watermark-low-pct", 0.1),
 	}
 
 	slog.Info("loaded controller config from settings", "config", c)
