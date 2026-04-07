@@ -23,6 +23,9 @@ func NewController(config Config) Controller {
 	case "pressure":
 		slog.Info("selected pressure controller")
 		return NewPressureController(config)
+	case "watermark":
+		slog.Info("selected watermark controller")
+		return NewWatermarkController(config)
 	default:
 		slog.Warn("selected unknown controller, falling back to default (log)", "controller", config.Kind)
 		return NewLogController()
