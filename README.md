@@ -111,8 +111,8 @@ Logs host and guest memory statistics without taking any action. Useful for obse
 
 Adjusts the balloon based on two signals:
 
-- **Pressure** (0-1): how urgently the host needs memory, derived from host free % and an exponential curve
-- **Generosity** (0-1): how much surplus the guest has above its reserve floor
+- **Pressure** (0–1): how urgently the host needs memory, derived from host free % and an exponential curve
+- **Generosity** (0–1): how willing the guest is to give up memory. A guest is fully generous (1.0) when all its used memory fits inside its reserved floor (`1/overcommit` of total RAM) - meaning everything above the floor is surplus. As the guest uses more memory and exceeds its floor, generosity drops toward 0
 
 As host pressure rises, a lerp override increasingly forces generosity toward 1.0, guaranteeing the host can always reclaim up to the overcommit limit:
 
@@ -124,9 +124,8 @@ Where `maxReclaim = 1 − 1/overcommit` (e.g., 0.5 for overcommit 2).
 
 ![Exponential curves](doc/curves.png)
 
-**Left**: the base exponential function for different steepness values.
-**Center**: host pressure vs host free % - pressure reaches 1.0 at the reserved threshold.
-**Right**: guest generosity vs guest free % - generosity reaches 1.0 when used memory fits inside the reserved zone.
+**Top row**: base exponential function, host pressure vs host free %, and guest generosity vs guest free %.
+**Bottom row**: effective reclaim % at pressure 0.2, 0.5, and 0.9 - despite lower generosity, higher overcommit reclaims more because the reclaimable zone is larger. At high pressure the lerp override forces reclaim toward the maximum.
 
 #### Capacity Planning
 
